@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Recipe Pipeline — Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>body{font-family:Arial;padding:18px} .card{max-width:900px;margin:auto}</style>
+</head>
+<body>
+  <div class="card">
+    <h2>Recipe Pipeline — Demo</h2>
+    <p>Data served from public GCS processed folder.</p>
+    <button id="load">Load latest processed data</button>
+    <canvas id="chart" height="120"></canvas>
+    <pre id="raw"></pre>
+  </div>
+<script>
+const BUCKET = "YOUR_BUCKET_NAME";
+async function listProcessed() {
+  
+  const url = `https://storage.googleapis.com/${BUCKET}/processed/recipes_processed.json`;
+  const r = await fetch(url);
+  if(!r.ok){ alert('Processed file not found at ' + url); return; }
+  const rows = await r.json();
+  render(rows);
+}
+function render(rows){
+  document.getElementById('raw').textContent = JSON.stringify(rows,null,2);
+  const cuisineMap = {};
+  rows.forEach(r=>{
+    cuisineMap[r.cuisine] = cuisineMap[r.cuisine] || {sum:0,c:0};
+    cuisineMap[r.cuisine].sum += 4; 
+    cuisineMap[r.cuisine].c += 1;
+  });
+  const labels = Object.keys(cuisineMap);
+  const data = labels.map(l=> (cuisineMap[l].sum / cuisineMap[l].c).toFixed(2));
+  new Chart(document.getElementById('chart').getContext('2d'), {
+    type:'bar',
+    data:{labels:labels, datasets:[{label:'Avg Score (demo)', data:data}]},
+    options:{responsive:true}
+  });
+}
+document.getElementById('load').onclick = listProcessed;
+</script>
+</body>
+</html>
